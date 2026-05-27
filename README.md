@@ -52,6 +52,7 @@ git --version
 > successful version checks and insert it here.
 >
 > `[insert screenshot]`
+<img width="585" height="166" alt="Screenshot 2026-05-26 at 6 15 18 pm" src="https://github.com/user-attachments/assets/a92e23f1-93ce-4da8-9ae8-6d6e99d63759" />
 
 ---
 
@@ -107,25 +108,24 @@ For each attribute in the table above, choose the most appropriate SQL standard
 data type and write it into the table below. Justify each choice in one sentence.
 Use `NUMERIC(p,s)` for monetary values; choose the most precise date/time type
 for each temporal attribute.
-
-| Attribute              | Your Type         | Justification |
-|------------------------|-------------------|---------------|
-| isbn                   |                   |               |
-| titel                  |                   |               |
-| erscheinungsjahr       |                   |               |
-| verlag                 |                   |               |
-| tagesgebuehr           |                   |               |
-| exemplar_id            |                   |               |
-| standort               |                   |               |
-| mitglied_id            |                   |               |
-| nachname               |                   |               |
-| vorname                |                   |               |
-| geburtsdatum           |                   |               |
-| email                  |                   |               |
-| beitritt_datum         |                   |               |
-| ausleihe_id            |                   |               |
-| ausleihe_datum         |                   |               |
-| rueckgabe_datum        |                   |               |
+| Attribute              | Your Type        | Justification |
+|------------------------|------------------|---------------|
+| isbn                   | TEXT             | ISBN enthält Bindestriche und darf nicht als Zahl berechnet werden. |
+| titel                  | TEXT             | Titel sind Zeichenketten unterschiedlicher Länge. |
+| erscheinungsjahr       | INTEGER          | Das Erscheinungsjahr ist eine ganze Zahl. |
+| verlag                 | TEXT             | Verlagsnamen bestehen aus Text. |
+| tagesgebuehr           | NUMERIC(4,2)     | Geldwerte müssen exakt gespeichert werden. |
+| exemplar_id            | INTEGER          | IDs werden als ganze Zahlen gespeichert. |
+| standort               | TEXT             | Der Standort enthält Buchstaben, Zahlen und Sonderzeichen. |
+| mitglied_id            | INTEGER          | Mitgliedsnummern sind ganze Zahlen. |
+| nachname               | TEXT             | Nachnamen sind Textwerte. |
+| vorname                | TEXT             | Vornamen sind Textwerte. |
+| geburtsdatum           | DATE             | Es wird nur ein Kalenderdatum gespeichert. |
+| email                  | TEXT             | E-Mail-Adressen bestehen aus Zeichenketten. |
+| beitritt_datum         | DATE             | Das Eintrittsdatum speichert nur ein Datum. |
+| ausleihe_id            | INTEGER          | Ausleih-IDs sind ganze Zahlen. |
+| ausleihe_datum         | DATE             | Das Ausleihdatum benötigt nur ein Datum. |
+| rueckgabe_datum        | DATE             | Das Rückgabedatum wird als Datum gespeichert. |
 
 ### Questions for Task 1
 
@@ -134,19 +134,23 @@ example — using arithmetic — of why `REAL` would produce an incorrect result
 for a lending fee calculation. Which type must be used instead?
 
 > *Your answer:*
+> REAL kann Rundungsfehler erzeugen, z. B. 0.1 + 0.2 = 0.3000000004. Für Geldwerte muss deshalb NUMERIC(p,s) verwendet werden.
+
 
 **Question 1.2:** `rueckgabe_datum` must be nullable. Explain what `NULL` means
 in this specific context. Is `NULL` the same as "zero days"? Justify with
 reference to the three-valued logic of SQL.
 
 > *Your answer:*
+> NULL bedeutet hier, dass das Buch noch nicht zurückgegeben wurde. NULL ist nicht dasselbe wie „0 Tage“, sondern bedeutet unbekannt oder nicht vorhanden.
 
 **Question 1.3:** `beitritt_datum` should default to today's date when no value
 is provided. Write the `DEFAULT` expression you would use and explain why this
 is preferable to always supplying the date explicitly in the application.
 
 > *Your answer:*
-
+> DEFAULT CURRENT_DATE
+Die Datenbank trägt automatisch das heutige Datum ein und verhindert Fehler durch die Anwendung.
 ---
 
 ## 2 – DDL: Create the Schema
@@ -243,6 +247,7 @@ sqlite3 bibliothek.db ".schema"
 > output in your terminal.
 >
 > `[insert screenshot]`
+<img width="819" height="506" alt="Screenshot 2026-05-26 at 6 31 13 pm" src="https://github.com/user-attachments/assets/c900d26b-4b0d-4e05-8699-7d104e512b0d" />
 
 ### Task 2c – Test Constraints
 
@@ -269,8 +274,13 @@ INSERT INTO ausleihe VALUES (1, 1, 1, '2026-05-10', '2026-05-01');
 > *Describe the error or result for each test:*
 >
 > - Test A:
+The INSERT failed because the CHECK constraint rejected the negative value for tagesgebuehr.
+
 > - Test B:
+The INSERT failed because the email column is defined as NOT NULL.
+
 > - Test C:
+The first three INSERT statements worked successfully. The last INSERT into ausleihe failed because rueckgabe_datum was earlier than ausleihe_datum, violating the CHECK constraint.
 
 ### Questions for Task 2
 
@@ -279,18 +289,21 @@ constraint rather than a column constraint. Why is a column constraint
 insufficient here?
 
 > *Your answer:*
+> Eine Column-Constraint reicht nicht aus, weil zwei Spalten verglichen werden müssen: rueckgabe_datum und ausleihe_datum.
 
 **Question 2.2:** You chose `ON DELETE RESTRICT` for all foreign keys.
 Describe a realistic alternative: for which relationship would `ON DELETE
 CASCADE` be appropriate instead, and why?
 
 > *Your answer:*
-
+ON DELETE CASCADE wäre sinnvoll zwischen exemplar und ausleihe, damit beim Löschen eines Exemplars auch alte Ausleihen automatisch gelöscht werden.
+> 
 **Question 2.3:** `email` is declared `UNIQUE`. According to the SQL standard,
 how many `NULL` values may a `UNIQUE` column contain? Explain using the
 three-valued logic of SQL.
 
 > *Your answer:*
+> Eine UNIQUE-Spalte darf mehrere NULL-Werte enthalten, weil NULL in SQL nicht als gleicher Wert betrachtet wird.
 
 ---
 
@@ -409,6 +422,8 @@ works because all affected rows are in the same table. Why can a standard SQL
 you use instead in a production system?
 
 > *Your answer:*
+> Ein Standard-SQL-UPDATE kann nur eine Tabelle gleichzeitig ändern.
+Um mehrere Tabellen in einem Produktivsystem zu aktualisieren, verwendet man Transactions oder Stored Procedures.
 
 **Question 3.2:** Task 3b.3 raises the fee for books published before 1960
 by 10 cents. Write the equivalent statement using `NUMERIC` arithmetic:
@@ -416,6 +431,14 @@ by 10 cents. Write the equivalent statement using `NUMERIC` arithmetic:
 with `REAL`? Explain the risk.
 
 > *Your answer:*
+Die Anweisung lautet:
+
+UPDATE buch
+SET tagesgebuehr = tagesgebuehr + 0.10
+WHERE erscheinungsjahr < 1960;
+
+Mit NUMERIC funktioniert dies korrekt, weil Geldwerte exakt gespeichert werden.
+Mit REAL können Rundungsfehler entstehen, zum Beispiel 0.799999 statt 0.80.
 
 **Question 3.3:** Task 3c.1 deletes loans where the return date is more than
 30 days ago. A `DELETE` without a `WHERE` clause would delete all loans.
@@ -423,6 +446,10 @@ Describe the operational consequence and explain how `BEGIN` / `ROLLBACK`
 protects against this mistake.
 
 > *Your answer:*
+Ein DELETE ohne WHERE-Klausel würde alle Ausleihen aus der Tabelle löschen.
+Das könnte zu vollständigem Datenverlust führen.
+
+BEGIN und ROLLBACK schützen vor diesem Fehler, weil die Transaction vor dem COMMIT rückgängig gemacht werden kann.
 
 ---
 
@@ -484,6 +511,8 @@ nullable column. Why is this simpler than adding a `NOT NULL` column to an
 already-populated table? What steps would be needed for a `NOT NULL` column?
 
 > *Your answer:*
+Eine nullable Spalte ist einfacher, weil bestehende Zeilen keinen Wert benötigen.
+Bei einer NOT NULL-Spalte müsste zuerst ein Standardwert gesetzt oder alle bestehenden Zeilen aktualisiert werden.
 
 **Question 4.2:** SQLite's limited `ALTER TABLE` support is a deliberate
 design decision. What does this tell you about the trade-off between a
@@ -491,6 +520,8 @@ lightweight embedded database and a full-featured server database system?
 Name one scenario where SQLite is the right choice and one where it is not.
 
 > *Your answer:*
+SQLite ist leicht und einfach aufgebaut, unterstützt deshalb aber weniger ALTER TABLE-Funktionen als große Datenbanksysteme.
+SQLite eignet sich gut für kleine Apps oder mobile Anwendungen, aber nicht für große Systeme mit vielen Benutzern gleichzeitig.
 
 Commit:
 
@@ -545,6 +576,7 @@ SELECT * FROM ausleihe WHERE ausleihe_id = 5;
 > **Screenshot 3:** Take a screenshot showing the inserted row.
 >
 > `[insert screenshot]`
+<img width="638" height="145" alt="Screenshot 2026-05-27 at 9 13 59 am" src="https://github.com/user-attachments/assets/44dbd196-269f-433e-87d2-256de50512b4" />
 
 ### Task 5b – Simulate a Rollback
 
@@ -571,6 +603,9 @@ SELECT COUNT(*) FROM ausleihe WHERE ausleihe_id = 6;
 
 > *Describe what you see and explain why `ROLLBACK` reversed both changes:*
 
+Nach dem ROLLBACK wurde die Änderung von rueckgabe_datum rückgängig gemacht und die Ausleihe mit ausleihe_id = 6 wurde nicht gespeichert.
+ROLLBACK setzt die gesamte Transaction zurück, deshalb wurden beide Änderungen verworfen.
+
 ### Questions for Task 5
 
 **Question 5.1:** In the lending scenario, why is it important that the
@@ -578,6 +613,9 @@ availability check and the insert happen inside the same transaction?
 What could go wrong if they ran as separate Autocommit statements?
 
 > *Your answer:*
+Die Verfügbarkeitsprüfung und das INSERT müssen in derselben Transaction stattfinden, damit keine andere Änderung dazwischen passiert.
+Bei getrennten Autocommit-Statements könnten zwei Mitglieder gleichzeitig dasselbe Buch ausleihen.
+>
 
 **Question 5.2:** The lecture states: "Ein fehlendes `WHERE` aktualisiert
 alle Zeilen." Write the single most dangerous `UPDATE` statement possible
@@ -585,13 +623,21 @@ on this database and explain the damage it would cause. Then explain how
 `BEGIN` / `ROLLBACK` would allow you to recover.
 
 > *Your answer:*
+> Gefährliches Beispiel:
+UPDATE ausleihe
+SET rueckgabe_datum = NULL;
+Dadurch würden alle Bücher als noch ausgeliehen markiert werden.
+Mit BEGIN und ROLLBACK könnten die Änderungen vor dem COMMIT rückgängig gemacht werden.
+
 
 **Question 5.3:** Autocommit is convenient for read-only queries (`SELECT`).
 Is it also safe for DML in an interactive session? Give a concrete example
 from this exercise where Autocommit would have caused irreversible data loss.
 
 > *Your answer:*
-
+Autocommit ist für DML nicht sicher, weil Änderungen sofort dauerhaft gespeichert werden.
+Zum Beispiel würde DELETE FROM ausleihe; sofort alle Ausleihen löschen.
+Mit einer Transaction könnte man den Fehler mit ROLLBACK rückgängig machen.
 Commit:
 
 ```bash
@@ -610,6 +656,8 @@ it should be a more specific type, and what concrete query would break or
 produce wrong results if the wrong type were used?
 
 > *Your answer:*
+> tagesgebuehr könnte fälschlich als TEXT gespeichert werden.
+Dann würden Berechnungen wie SUM(tagesgebuehr) falsche Ergebnisse liefern.
 
 **Question B – DDL as documentation:**  
 A colleague reads your `schema.sql` and says: "Constraints slow down inserts
@@ -618,6 +666,8 @@ reasons why enforcing constraints in the database is preferable to
 enforcing them only in application code.
 
 > *Your answer:*
+Constraints schützen die Daten direkt in der Datenbank und verhindern ungültige Werte.
+Außerdem gelten die Regeln für alle Anwendungen, nicht nur für ein einzelnes Programm.
 
 **Question C – NULL semantics in lending:**  
 In `ausleihe`, `rueckgabe_datum IS NULL` means "currently on loan". Could
@@ -625,6 +675,8 @@ this semantic be expressed without using `NULL` — e.g. by using a status
 column instead? What are the trade-offs?
 
 > *Your answer:*
+Ja, man könnte statt NULL eine Statusspalte wie „offen“ oder „zurückgegeben“ verwenden.
+Mit NULL bleibt das Modell aber einfacher und benötigt keine zusätzliche Spalte.
 
 **Question D – `TRUNCATE` vs. `DELETE`:**  
 If you wanted to reset the entire database and reload the sample data from
@@ -633,12 +685,20 @@ in SQLite? What alternative would you use, and in what order must the tables
 be emptied to respect foreign key constraints?
 
 > *Your answer:*
+> SQLite unterstützt TRUNCATE nicht.
+Man verwendet stattdessen DELETE FROM.
+Die Tabellen müssen in dieser Reihenfolge geleert werden:
+ausleihe
+exemplar
+mitglied
+buch
 
 > **Screenshot 4:** Take a screenshot showing the output of the row-count
 > verification from Task 3a after completing all DML tasks, with
 > `.headers on` and `.mode column` active.
 >
 > `[insert screenshot]`
+<img width="662" height="282" alt="Screenshot 2026-05-27 at 5 33 16 pm" src="https://github.com/user-attachments/assets/c8435dc6-fb8e-4354-b9df-f2d1d243a28e" />
 
 ---
 
