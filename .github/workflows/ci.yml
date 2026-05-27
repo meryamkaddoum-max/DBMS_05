@@ -23,7 +23,7 @@ jobs:
           sqlite3 bibliothek.db < ./data.sql
 
       - name: Row Counts prüfen
-        run: |
+         run: |
           sqlite3 bibliothek.db "
           SELECT 'buch', COUNT(*) FROM buch
           UNION ALL
