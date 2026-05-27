@@ -17,13 +17,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y sqlite3
 
       - name: Datenbank erstellen
- 	 run: |
-    	  rm -f bibliothek.db
+        run: |
+          rm -f bibliothek.db
           sqlite3 bibliothek.db < ./schema.sql
           sqlite3 bibliothek.db < ./data.sql
 
       - name: Row Counts prüfen
-         run: |
+        run: |
           sqlite3 bibliothek.db "
           SELECT 'buch', COUNT(*) FROM buch
           UNION ALL
